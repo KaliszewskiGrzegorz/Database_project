@@ -101,9 +101,9 @@ CREATE TABLE Orders_Detalis(
 	--PRIMARY KEY(OrderNumber, PartID)		
 )
 
-hierarchia pracowmnikow
-walidacja numeru NIP, nr telefonu, peselu
-obliczanie dochodu rocznego, mieisecznego itp
-dodawanie zlecenia, pracownika, dostawcy itp
-wspolczynnik rotacji ogarnac
-
+fancy: hierarchia pracowmnikow
+triger: walidacja numeru NIP, nr telefonu, peselu, sprawdzanie czy jest juz czesc w magazynie (jesli tak to dodanie, jesli nie to stworzenie rekordu), 
+	aktualizacje wspolczynnika rotacji,   Zamów nowe części, jeśli stare się skończą
+procedury: dodawanie zlecenia, pracownika, dostawcy, wystawienie faktury, pracownik przechodzi na emeryture (automatycznie), procedury do usuwania itd
+widoki, funkcje to ez bd (obliczanie dochodu rocznego, mieisecznego itp)
+panel admina itp : mechanik moze dodawac np. naprawe, a menedzer bd mogl wszystko
