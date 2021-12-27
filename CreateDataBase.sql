@@ -47,32 +47,14 @@ ALTER TABLE Customers
 ADD CONSTRAINT [type of buisness entity]
 FOREIGN KEY (Category) REFERENCES Customers_Categories(CategoryID)
 
-CREATE TABLE Warehouse(
-	PartID INT IDENTITY(1,1),
-	SupplyID INT NOT NULL,
+CREATE TABLE Parts(
+	PartID INT PRIMARY KEY IDENTITY(1,1),
+	Category INT NOT NULL,
 	[Name] VARCHAR(30) NOT NULL,
-	Quantity INT NOT NULL,
 	[Logistic_Minimum] INT NOT NULL,
 	Unity NVARCHAR(20) NOT NULL,
-	[Purchase Price] MONEY NULL,
-	Price MONEY NOT NULL,
-	Category INT NOT NULL,
-	[Location] NVARCHAR(10) NULL,
-	PRIMARY KEY(PartID, SupplyID)
---	[Rotation Factor] FLOAT NOT NULL,
---	Zapotrzebowanie
+	Price MONEY NOT NULL
 )
-
-CREATE TABLE Parts_Categories(					
-	CategoryID INT PRIMARY KEY IDENTITY(1,1),		
-	VAT INT NOT NULL,
-	Name NVARCHAR(50) NOT NULL,
-	 
-)
-
-AlTER TABLE Warehouse
-ADD CONSTRAINT [part category]
-FOREIGN KEY (Category) REFERENCES Parts_Categories(CategoryID)
 
 CREATE TABLE Suppliers(
 	SuppilerID INT PRIMARY KEY IDENTITY(1,1),
@@ -82,15 +64,55 @@ CREATE TABLE Suppliers(
 	City NVARCHAR(50) NOT NULL,
 	Adress NVARCHAR(256) NOT NULL,
 	Phone NVARCHAR(12) NOT NULL,
-	[Account Number] NVARCHAR(12) NOT NULL,
+	[Account Number] NVARCHAR(12) NOT NULL
 )
+
+CREATE TABLE Supply(
+	SupplyID INT PRIMARY KEY IDENTITY(1,1),
+	SuppilerID INT NOT NULL,
+	[Delivery Date] DATE NOT NULL
+)
+
+ALTER TABLE Supply
+ADD CONSTRAINT [Suppiler]
+FOREIGN KEY (SuppilerID) REFERENCES Suppliers(SuppilerID)
+
+
+CREATE TABLE Warehouse(
+	PartID INT NOT NULL,
+	SupplyID INT NOT NULL,
+	Quantity INT NOT NULL,
+	[Purchase Price] MONEY NULL,
+	[Location] NVARCHAR(10) NULL,
+	CONSTRAINT PKWarehouse PRIMARY KEY (PartID, SupplyID)
+--	[Rotation Factor] FLOAT NOT NULL,
+--	Zapotrzebowanie
+)
+
+CREATE TABLE Parts_Categories(					
+	CategoryID INT PRIMARY KEY IDENTITY(1,1),		
+	VAT INT NOT NULL,
+	[Name] NVARCHAR(50) NOT NULL
+)
+
+ALTER TABLE Warehouse
+ADD CONSTRAINT [partid]
+FOREIGN KEY (PartID) REFERENCES Parts(PartID)
+
+AlTER TABLE Parts 
+ADD CONSTRAINT [part category]
+FOREIGN KEY (Category) REFERENCES Parts_Categories(CategoryID)
+
+ALTER TABLE Warehouse
+ADD CONSTRAINT [supplyid]
+FOREIGN KEY (SupplyID) REFERENCES Supply(SupplyID)
 
 CREATE TABLE Repair_Orders(					
 	OrderID INT PRIMARY KEY IDENTITY(1,1),
 	CustomerID INT NOT NULL,
 	VIN NVARCHAR(50) NOT NULL,
 	[Release Date] DATE NOT NULL,
-	EmployeeID INT NOT NULL,									
+	EmployeeID INT NOT NULL									
 )							
 
 ALTER TABLE Repair_Orders
@@ -104,87 +126,29 @@ FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID)
 CREATE TABLE Orders_Detalis(
 	OrderID INT NOT NULL,
 	PartID INT NOT NULL,
-	RelocationID INT NULL,
+	RelocationID INT NOT NULL,
 	[Predicted Quantity] INT NOT NULL,	
 	[Used Quantity] INT NULL,
-	PRIMARY KEY(OrderID, PartID)		
+	PRIMARY KEY(OrderID, PartID, RelocationID)		
 )
+
+ALTER TABLE Orders_Detalis
+ADD CONSTRAINT [parts to order]
+FOREIGN KEY (PartID) REFERENCES Parts(PartID)
 
 ALTER TABLE Orders_Detalis
 ADD CONSTRAINT [to order]
 FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID) 
 
-CREATE TABLE Buffer_Warehouse(
-	PartID INT NOT NULL,
-	OrderID INT NOT NULL,
-	TransferID INT NOT NULL,
-	SupplyID INT NOT NULL,
-	Quantity INT NOT NULL,
-	PRIMARY KEY(PartID, OrderID, TransferID, SupplyID)
-)
--- Kolejne klucze obce do zrobienia po zrobieniu tabel z przeniesiami wew.
-ALTER TABLE Buffer_Warehouse
-ADD CONSTRAINT [parts transfered for order]
-FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
-
-CREATE TABLE Supply(
-	SupplyID INT PRIMARY KEY IDENTITY(1,1),
-	SuppilerID INT NOT NULL,
-	[Delivery Date] DATE NOT NULL,
-)
-
-ALTER TABLE Supply
-ADD CONSTRAINT [Suppiler]
-FOREIGN KEY (SuppilerID) REFERENCES Suppliers(SuppilerID)
-
-CREATE TABLE Supply_Detalist(
-	SupplyID INT,
-	PartID INT,
-	Price MONEY NOT NULL,
-	Quantity INT NOT NULL,
-	PRIMARY KEY(SupplyID, PartID)
-)
-
-ALTER TABLE Warehouse
-ADD CONSTRAINT [partid]
-FOREIGN KEY (PartID) REFERENCES Supply_Detalist(PartID)
-
-ALTER TABLE Orders_Detalis
-ADD CONSTRAINT [parts to order]
-FOREIGN KEY (PartID) REFERENCES Warehouse(PartID)
-
-ALTER TABLE Warehouse
-ADD CONSTRAINT [supplyid]
-FOREIGN KEY (SupplyID) REFERENCES Supply_Detalist(SupplyID)
-
-ALTER TABLE Supply_Detalist
-ADD CONSTRAINT [supply]
-FOREIGN KEY (SupplyID) REFERENCES Supply(SupplyID)
-
-ALTER TABLE Supply_Detalist
-ADD CONSTRAINT [delivered parts]
-FOREIGN KEY (PartID) REFERENCES Warehouse(PartID)
-
-CREATE TABLE Sales(
-	SalesID INT PRIMARY KEY IDENTITY(1,1),
-	[Date] Date,
-	CustomerID INt,
-	RelocationID INT
-)
-
 CREATE TABLE Relocations(
 	RelocationID INT PRIMARY KEY IDENTITY(1,1),
 	[Type] NVARCHAR(10) NOT NULL,
-	[Date] DATE NOT NULL,
+	[Date] DATE NOT NULL
 )
 
-ALTER TABLE Sales
-ADD CONSTRAINT [parts sales]
+ALTER TABLE Orders_Detalis
+ADD CONSTRAINT [relocation for order]
 FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
-
-ALTER TABLE Sales
-ADD CONSTRAINT [buyer]
-FOREIGN KEY (CustomerID) REFERENCES Relocations(CustomerID)
 
 CREATE TABLE Internal_Relocations(
 	RelocationID INT,
@@ -200,23 +164,98 @@ ADD CONSTRAINT [relocationid]
 FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
 
 ALTER TABLE	Internal_Relocations
-ADD CONSTRAINT [partid]
-FOREIGN KEY (PartID) REFERENCES Warehouse(PaertID)
+ADD CONSTRAINT [partid in internal relocation]
+FOREIGN KEY (PartID) REFERENCES Parts(PartID)
 
 ALTER TABLE Internal_Relocations
-ADD CONSTRAINT [orderid]
+ADD CONSTRAINT [orderid in internal relocation]
 FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
 
 CREATE TABLE External_Relocations(
-	RelocationID INT,
-	PartID INT,
-	SupplyID INT,
+	RelocationID INT NOT NULL,
+	PartID INT NOT NULL,
+	SupplyID INT NOT NULL,
 	CustomerID INT NOT NULL,
 	SalesID INT NOT NULL,
 	PRIMARY KEY(RelocationID, PartID, SupplyID)
 )
 
+CREATE TABLE Buffer_Warehouse(
+	PartID INT NOT NULL,
+	OrderID INT NOT NULL,
+	RelocationID INT NOT NULL,
+	SupplyID INT NOT NULL,
+	Quantity INT NOT NULL,
+	PRIMARY KEY(PartID, OrderID, RelocationID, SupplyID)
+)
 
+ALTER TABLE Buffer_Warehouse
+ADD CONSTRAINT [relocation to buffer]
+FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
+
+ALTER TABLE Buffer_Warehouse
+ADD CONSTRAINT [parts transfered for order]
+FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
+
+ALTER TABLE Buffer_Warehouse
+ADD CONSTRAINT [parts in buffer]
+FOREIGN KEY (PartID) REFERENCES Parts(PartID)
+
+ALTER TABLE Buffer_Warehouse
+ADD CONSTRAINT [supplyid in buffer]
+FOREIGN KEY (SupplyID) REFERENCES Supply(SupplyID)
+
+CREATE TABLE Sales(
+	SalesID INT PRIMARY KEY IDENTITY(1,1),
+	[Date] Date,
+	CustomerID INt,
+	RelocationID INT
+)
+
+ALTER TABLE Sales
+ADD CONSTRAINT [parts sales]
+FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
+
+ALTER TABLE Sales
+ADD CONSTRAINT [buyer]
+FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+
+CREATE TABLE Factures(
+	FactureID INT PRIMARY KEY IDENTITY(1,1),
+	CustomerID INT NOT NULL,
+	[Payment Method] NVARCHAR(30) NOT NULL,
+	[Date] DATE NOT NULL,
+)
+
+ALTER TABLE Factures
+ADD CONSTRAINT [customerid on facture]
+FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+
+CREATE TABLE Repaires_Factures(
+	FactureID INT PRIMARY KEY,
+	OrderID INT NOT NULL,
+)
+
+ALTER TABLE Repaires_Factures
+ADD CONSTRAINT [repair factureid]
+FOREIGN KEY (FactureID) REFERENCES Factures(FactureID)
+
+ALTER TABLE Repaires_Factures
+ADD CONSTRAINT [repairorederid]
+FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
+
+CREATE TABLE Sales_Factures(
+	FactureID INT PRIMARY KEY,
+	SalesID INT NOT NULL,
+)
+
+ALTER TABLE Sales_Factures
+ADD CONSTRAINT [sales factureid]
+FOREIGN KEY (FactureID) REFERENCES Factures(FactureID)
+
+ALTER TABLE Sales_Factures
+ADD CONSTRAINT [salesid]
+FOREIGN KEY (SalesID) REFERENCES Sales(SalesID)
 
 /*
 fancy: hierarchia pracowmnikow
