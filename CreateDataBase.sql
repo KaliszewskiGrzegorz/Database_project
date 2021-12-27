@@ -17,16 +17,16 @@ CREATE TABLE Employees(
 CREATE TABLE Positions(			
 	Name NVARCHAR(50) PRIMARY KEY,
 	[Price per hour] MONEY NOT NULL,
-	[Hourly rate] MONEY NOT NULL,
+	[Hourly rate] MONEY NOT NULL
 )
 
 ALTER TABLE Employees
 ADD CONSTRAINT [HeldPosition]
-FOREIGN KEY (Position) REFERENCES Positions.Name
+FOREIGN KEY (Position) REFERENCES Positions(Name)
 
 CREATE TABLE Customers(
-	ID INT PRIMARY KEY IDENTITY(1,1),
-	[Name] NVARCHAR(256) NOT NULL,
+	CustomerID INT PRIMARY KEY IDENTITY(1,1),
+	CategoryID NVARCHAR(256) NOT NULL,
 	NIP NVARCHAR(10) NULL,
 	[Post Code] NVARCHAR(6) NOT NULL,
 	City NVARCHAR(50) NOT NULL,
@@ -37,7 +37,7 @@ CREATE TABLE Customers(
 )
 
 CREATE TABLE Customers_Categories(
-	Name NVARCHAR(30) PRIMARY KEY,
+	CategoryID NVARCHAR(30) PRIMARY KEY,
 	Discount TINYINT NOT NULL,
 	[Payment Method] NVARCHAR(30) NOT NULL,		
 	[Business Entity] NVARCHAR(30) NOT NULL
@@ -45,11 +45,11 @@ CREATE TABLE Customers_Categories(
 
 ALTER TABLE Customers
 ADD CONSTRAINT [type of buisness entity]
-FOREIGN KEY (Category) REFERENCES Customers_Categories.Name
+FOREIGN KEY (Category) REFERENCES Customers_Categories(CategoryID)
 
 CREATE TABLE Warehouse(
-	PartID VARCHAR(10),
-	SupplyID INT,
+	PartID INT IDENTITY(1,1),
+	SupplyID INT NOT NULL,
 	[Name] VARCHAR(30) NOT NULL,
 	Quantity INT NOT NULL,
 	[Logistic_Minimum] INT NOT NULL,
@@ -57,22 +57,22 @@ CREATE TABLE Warehouse(
 	[Purchase Price] MONEY NULL,
 	Price MONEY NOT NULL,
 	Category INT NOT NULL,
+	[Location] NVARCHAR(10) NULL,
+	PRIMARY KEY(PartID, SupplyID)
 --	[Rotation Factor] FLOAT NOT NULL,
 --	Zapotrzebowanie
-	[Location] NVARCHAR(10) NULL
-	PRIMARY KEY(PartID, SupplyID)
-
 )
 
 CREATE TABLE Parts_Categories(					
 	CategoryID INT PRIMARY KEY IDENTITY(1,1),		
 	VAT INT NOT NULL,
-	Name NVARCHAR(50),
+	Name NVARCHAR(50) NOT NULL,
 	 
 )
+
 AlTER TABLE Warehouse
 ADD CONSTRAINT [part category]
-FOREIGN KEY (Category) REFERENCES Warehouse.ID_Category
+FOREIGN KEY (Category) REFERENCES Parts_Categories(CategoryID)
 
 CREATE TABLE Suppliers(
 	SuppilerID INT PRIMARY KEY IDENTITY(1,1),
@@ -94,17 +94,17 @@ CREATE TABLE Repair_Orders(
 )							
 
 ALTER TABLE Repair_Orders
-ADD CONSTRAINT [customr]
-FOREIGN KEY (CustomerID) REFERENCES Customers.CustomerID
+ADD CONSTRAINT [customer]
+FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
 
 ALTER TABLE Repair_Orders
 ADD CONSTRAINT [assigned mechanic]
-FOREIGN KEY (EmployeeID) REFERENCES Employees.EmployeeID
+FOREIGN KEY (EmployeeID) REFERENCES Employees(EmployeeID)
 
 CREATE TABLE Orders_Detalis(
-	OrderID INT,
-	PartID INT,
-	[Transfer Number] INT NULL,
+	OrderID INT NOT NULL,
+	PartID INT NOT NULL,
+	RelocationID INT NULL,
 	[Predicted Quantity] INT NOT NULL,	
 	[Used Quantity] INT NULL,
 	PRIMARY KEY(OrderID, PartID)		
@@ -112,24 +112,20 @@ CREATE TABLE Orders_Detalis(
 
 ALTER TABLE Orders_Detalis
 ADD CONSTRAINT [to order]
-FOREIGN KEY (OrderID) REFERENCES Repair_Orders.OrderID
-
-ALTER TABLE Orders_Detalis
-ADD CONSTRAINT [parts to order]
-FOREIGN KEY (OrderID) REFERENCES Warehouse.PartID
+FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID) 
 
 CREATE TABLE Buffer_Warehouse(
-	PartID NVARCHAR(10),
-	OrderID INT,
-	TransferID INT,
-	SupplyID INT,
+	PartID INT NOT NULL,
+	OrderID INT NOT NULL,
+	TransferID INT NOT NULL,
+	SupplyID INT NOT NULL,
 	Quantity INT NOT NULL,
 	PRIMARY KEY(PartID, OrderID, TransferID, SupplyID)
 )
 -- Kolejne klucze obce do zrobienia po zrobieniu tabel z przeniesiami wew.
 ALTER TABLE Buffer_Warehouse
 ADD CONSTRAINT [parts transfered for order]
-FOREIGN KEY (OrderID) REFERENCES Repair_Orders.OrderID
+FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
 
 CREATE TABLE Supply(
 	SupplyID INT PRIMARY KEY IDENTITY(1,1),
@@ -139,32 +135,35 @@ CREATE TABLE Supply(
 
 ALTER TABLE Supply
 ADD CONSTRAINT [Suppiler]
-FOREIGN KEY (SuppilerID) REFERENCES Suppliers.SuppilerID
+FOREIGN KEY (SuppilerID) REFERENCES Suppliers(SuppilerID)
 
 CREATE TABLE Supply_Detalist(
 	SupplyID INT,
-	PartID NVARCHAR(10),
+	PartID INT,
 	Price MONEY NOT NULL,
 	Quantity INT NOT NULL,
 	PRIMARY KEY(SupplyID, PartID)
 )
 
 ALTER TABLE Warehouse
-ADD CONSTRAINT [supplyid]
-FOREIGN KEY (SupplyID) REFERENCES Supply_Detalist.SupplyID
+ADD CONSTRAINT [partid]
+FOREIGN KEY (PartID) REFERENCES Supply_Detalist(PartID)
+
+ALTER TABLE Orders_Detalis
+ADD CONSTRAINT [parts to order]
+FOREIGN KEY (PartID) REFERENCES Warehouse(PartID)
 
 ALTER TABLE Warehouse
-ADD CONSTRAINT [partid]
-FOREIGN KEY (PartID) REFERENCES Supply_Detalist.PartID
-
+ADD CONSTRAINT [supplyid]
+FOREIGN KEY (SupplyID) REFERENCES Supply_Detalist(SupplyID)
 
 ALTER TABLE Supply_Detalist
 ADD CONSTRAINT [supply]
-FOREIGN KEY (SupplyID) REFERENCES Supply.SupplyID
+FOREIGN KEY (SupplyID) REFERENCES Supply(SupplyID)
 
 ALTER TABLE Supply_Detalist
 ADD CONSTRAINT [delivered parts]
-FOREIGN KEY (PartID) REFERENCES Warehouse.PartID
+FOREIGN KEY (PartID) REFERENCES Warehouse(PartID)
 
 CREATE TABLE Sales(
 	SalesID INT PRIMARY KEY IDENTITY(1,1),
@@ -181,15 +180,15 @@ CREATE TABLE Relocations(
 
 ALTER TABLE Sales
 ADD CONSTRAINT [parts sales]
-FOREIGN KEY (RelocationID) REFERENCES Relocations.RelocationID
+FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
 
 ALTER TABLE Sales
 ADD CONSTRAINT [buyer]
-FOREIGN KEY (CustomerID) REFERENCES Relocations.CustomerID
+FOREIGN KEY (CustomerID) REFERENCES Relocations(CustomerID)
 
 CREATE TABLE Internal_Relocations(
 	RelocationID INT,
-	PartID NVARCHAR(10),
+	PartID INT,
 	SupplyID INT,
 	EmployeeID INT NOT NULL,
 	OrderID INT NOT NULL,
@@ -198,19 +197,19 @@ CREATE TABLE Internal_Relocations(
 
 ALTER TABLE	Internal_Relocations
 ADD CONSTRAINT [relocationid]
-FOREIGN KEY (RelocationID) REFERENCES Relocations.RelocationID
+FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
 
 ALTER TABLE	Internal_Relocations
 ADD CONSTRAINT [partid]
-FOREIGN KEY (PartID) REFERENCES Warehouse.PaertID
+FOREIGN KEY (PartID) REFERENCES Warehouse(PaertID)
 
 ALTER TABLE Internal_Relocations
 ADD CONSTRAINT [orderid]
-FOREIGN KEY (OrderID) REFERENCES Repair_Orders.OrderID
+FOREIGN KEY (OrderID) REFERENCES Repair_Orders(OrderID)
 
 CREATE TABLE External_Relocations(
 	RelocationID INT,
-	PartID NVARCHAR(10),
+	PartID INT,
 	SupplyID INT,
 	CustomerID INT NOT NULL,
 	SalesID INT NOT NULL,
@@ -218,9 +217,12 @@ CREATE TABLE External_Relocations(
 )
 
 
+
+/*
 fancy: hierarchia pracowmnikow
 triger: walidacja numeru NIP, nr telefonu, peselu, sprawdzanie czy jest juz czesc w magazynie (jesli tak to dodanie, jesli nie to stworzenie rekordu), 
 	aktualizacje wspolczynnika rotacji,   Zamów nowe części, jeśli stare się skończą
 procedury: dodawanie zlecenia, pracownika, dostawcy, wystawienie faktury, pracownik przechodzi na emeryture (automatycznie), procedury do usuwania itd
 widoki, funkcje to ez bd (obliczanie dochodu rocznego, mieisecznego itp)
 panel admina itp : mechanik moze dodawac np. naprawe, a menedzer bd mogl wszystko
+*/
