@@ -180,6 +180,22 @@ CREATE TABLE External_Relocations(
 	PRIMARY KEY(RelocationID, PartID, SupplyID)
 )
 
+ALTER TABLE External_Relocations
+ADD CONSTRAINT [relocationid]
+FOREIGN KEY (RelocationID) REFERENCES Relocations(RelocationID)
+
+ALTER TABLE External_Relocations
+ADD CONSTRAINT [partid in external relocations]
+FOREIGN KEY (PartID) REFERENCES Parts(PartID)
+
+ALTER TABLE External_Relocations
+ADD CONSTRAINT [supplyid in external relocations]
+FOREIGN KEY (SupplyID) REFERENCES Supply(SupplyID)
+
+ALTER TABLE Externale_Relocations
+ADD CONSTRAINT [customerid in relocations]
+FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID)
+
 CREATE TABLE Buffer_Warehouse(
 	PartID INT NOT NULL,
 	OrderID INT NOT NULL,
@@ -211,6 +227,10 @@ CREATE TABLE Sales(
 	CustomerID INt,
 	RelocationID INT
 )
+
+ALTER TABLE External_Relocations
+ADD CONSTRAINT [salesid in external relocations]
+FOREIGN KEY (SalesID) REFERENCES Sales(SalesID)
 
 ALTER TABLE Sales
 ADD CONSTRAINT [parts sales]
